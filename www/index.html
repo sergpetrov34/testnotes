@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+<html>
+    <head>
+        <!--
+        Customize this policy to fit your own app's needs. For more guidance, see:
+            https://github.com/apache/cordova-plugin-whitelist/blob/master/README.md#content-security-policy
+        Some notes:
+            * gap: is required only on iOS (when using UIWebView) and is needed for JS->native communication
+            * https://ssl.gstatic.com is required only on Android and is needed for TalkBack to function properly
+            * Disables use of inline scripts in order to mitigate risk of XSS vulnerabilities. To change this:
+                * Enable inline JS: add 'unsafe-inline' to default-src
+        -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *">
+        <meta name="format-detection" content="telephone=no">
+        <meta name="msapplication-tap-highlight" content="no">
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+        <link rel="stylesheet" type="text/css" href="css/index.css">
+        <title>Voice Notes</title>
+        <script type="text/javascript" charset="utf-8">
+            // last captured media file
+            var mediaFile = null;
+            function clearMediaPlaceholder() {
+                document.getElementById('audio_player').setAttribute('style', 'visibility:hidden;display:none;');
+                var img = document.getElementById('camera_image');
+                img.style.visibility = "hidden";
+                img.style.display = "none";
+                img.src = "";
+            }
+            //-------------------------------------------------------------------------
+            // Capture
+            //-------------------------------------------------------------------------
+            /**
+            * Capture image
+            */
+            function captureImage() {
+                navigator.device.capture.captureImage(
+                    function (mediaFiles) {
+                        document.getElementById('capture_status').innerHTML = "Success. Captured " + mediaFiles.length + " media file(s).";
+                        if (mediaFiles.length <= 0) return;
+                        mediaFile = mediaFiles[0];
+                        document.getElementById('name').innerHTML = mediaFile.name;
+                        document.getElementById('fullPath').innerHTML = mediaFile.fullPath;
+                        document.getElementById('size').innerHTML = mediaFile.size;
+                        document.getElementById('lastModifiedDate').innerHTML = mediaFile.lastModifiedDate;
+                        document.getElementById('type').innerHTML = mediaFile.type;
+                        clearMediaPlaceholder();
+                        var img = document.getElementById('camera_image');
+                        img.style.visibility = "visible";
+                        img.style.display = "block";
+                        img.src = mediaFile.fullPath;
+                    },
+                    function (e) {
+                        console.log("Error getting picture: " + e);
+                        document.getElementById('capture_status').innerHTML = "Error getting picture.";
+                    },
+                    { limit: 1 });
+            };
+            /**
+            * Capture Audio
+            */
+            function captureAudio() {
+                navigator.device.capture.captureAudio(
+                    function (mediaFiles) {
+                        document.getElementById('capture_status').innerHTML = "Success. Captured " + mediaFiles.length + " media file(s).";
+                        if (mediaFiles.length <= 0) return;
+                        mediaFile = mediaFiles[0];
+                        document.getElementById('name').innerHTML = mediaFile.name;
+                        document.getElementById('fullPath').innerHTML = mediaFile.fullPath;
+                        document.getElementById('size').innerHTML = mediaFile.size;
+                        document.getElementById('lastModifiedDate').innerHTML = mediaFile.lastModifiedDate;
+                        document.getElementById('type').innerHTML = mediaFile.type;
+                        clearMediaPlaceholder();
+                        var player = document.getElementById('audio_player');
+                        player.setAttribute('style', 'visibility:visible;');
+                        // player.src = mediaFile.fullPath;
+                        player.src = "/storage/sdcard0/My Documents/My Recordings/Voice0006.aac";
+                        player.play();
+                    },
+                    function (e) {
+                        console.log("Error getting audio: " + e);
+                        document.getElementById('capture_status').innerHTML = "Error getting audio.";
+                    },
+                    { limit: 3 });
+            };
+            /**
+            * Capture Video
+            */
+            function captureVideo() {
+                navigator.device.capture.captureVideo(
+                    function (mediaFiles) {
+                        document.getElementById('capture_status').innerHTML = "Success. Captured " + mediaFiles.length + " media file(s).";
+                        if (mediaFiles.length <= 0) return;
+                        mediaFile = mediaFiles[0];
+                        document.getElementById('name').innerHTML = mediaFile.name;
+                        document.getElementById('fullPath').innerHTML = mediaFile.fullPath;
+                        document.getElementById('size').innerHTML = mediaFile.size;
+                        document.getElementById('lastModifiedDate').innerHTML = mediaFile.lastModifiedDate;
+                        document.getElementById('type').innerHTML = mediaFile.type;
+                        clearMediaPlaceholder();
+                        var player = document.getElementById('video_player');
+                        player.setAttribute('style', 'visibility:visible;');
+                        player.src = mediaFile.fullPath;
+                        console.log("src: " + mediaFile.fullPath);
+                    },
+                    function (e) {
+                        console.log("Error getting video: " + e);
+                        document.getElementById('capture_status').innerHTML = "Error getting video.";
+                    },
+                    { limit: 1 });
+            };
+            /**
+            * Function called when page has finished loading.
+            */
+            function init() {
+                document.addEventListener("deviceready", function () {
+                    console.log("Device=" + device.platform + " " + device.version);
+                }, false);
+            }
+            /**
+            * Function to play last captured media.
+            */
+            function playMedia() {
+                if (typeof mediaFile !== 'undefined') {
+                    mediaFile.play(
+                        null,
+                        function (e) {
+                            console.log("Error playing media: " + e);
+                            document.getElementById('capture_status').innerHTML = "Error playing media.";
+                        });
+                }
+            }
+
+
+            /**
+             * Stop audio
+             */
+            function stopAudio() {
+                console.log("stopAudio()");
+                if (media1) {
+                    media1.stop();
+                }
+                clearInterval(media1Timer);
+                media1Timer = null;
+            }
+            /**
+             * Set audio status
+             */
+            var setAudioStatus = function(status) {
+                document.getElementById('audio_status').innerHTML = status;
+            };
+
+            /**
+             * Set audio position
+             */
+            var setAudioPosition = function(position) {
+                document.getElementById('audio_position').innerHTML = position;
+            };
+
+            
+            var media1 = null;
+            var media1Timer = null;
+            var audioSrc = null;
+            var recordSrc = "/storage/sdcard0/My Documents/My Recordings/1.wav";
+            
+            /**
+             * Play audio
+             */
+            function playAudio(path) {
+                console.log("playAudio()");
+                console.log(" -- media="+media1);
+                var src = path;
+                // Stop playing if src is different from currently playing source
+                if (src != audioSrc) {
+                    if (media1 != null) {
+                        stopAudio();
+                        media1 = null;
+                    }
+                }
+                if (media1 == null) {
+                    console.log("Start creating media...");
+                    media1 = new Media(src,
+                        function() {
+                            console.log("playAudio():Audio Success");
+                        },
+                        function(err) {
+                            console.log("playAudio():Audio Error: "+err);
+                            setAudioStatus("Error: " + err);
+                        },
+                        function(status) {
+                            console.log("playAudio():Audio Status: "+status);
+                            setAudioStatus(Media.MEDIA_MSG[status]);
+                            // If stopped, then stop getting current position
+                            if (Media.MEDIA_STOPPED == status) {
+                                clearInterval(media1Timer);
+                                media1Timer = null;
+                            }
+                        });
+                }
+                console.log("Start play audio...");
+                audioSrc = src;
+                document.getElementById('audio_duration').innerHTML = "";
+                // Play audio
+                media1.play();
+                document.getElementById('play_caption').innerHTML = "Now playing: ";
+                document.getElementById('file_name').innerHTML = path;
+                if (media1Timer == null && media1.getCurrentPosition) {
+                    media1Timer = setInterval(
+                        function() {
+                            media1.getCurrentPosition(
+                                function(position) {
+                                    console.log("Pos="+position);
+                                    if (position > -1) {
+                                        setAudioPosition(position+" sec");
+                                    }
+                                },
+                                function(e) {
+                                    console.log("Error getting pos="+e);
+                                    setAudioPosition("Error: "+e);
+                                }
+                            );
+                        },
+                        1000
+                    );
+                }
+                // Get duration
+                var counter = 0;
+                var timerDur = setInterval(
+                    function() {
+                        counter = counter + 100;
+                        if (counter > 2000) {
+                            clearInterval(timerDur);
+                        }
+                        var dur = media1.getDuration();
+                        if (dur > 0) {
+                            clearInterval(timerDur);
+                            document.getElementById('audio_duration').innerHTML = dur + " sec";
+                        }
+                    }, 100);
+            }
+            
+            /**
+             * Record audio
+             */
+            var mediaRec = null;
+            var recTime = 0;
+
+
+            function recordAudio() {
+                console.log("recordAudio()");
+                console.log(" -- media="+mediaRec);
+                if (mediaRec == null) {
+                    var src = recordSrc;
+                    mediaRec = new Media(src,
+                            function() {
+                                console.log("recordAudio():Audio Success");
+                            },
+                            function(err) {
+                                console.log("recordAudio():Audio Error: "+err);
+                                setAudioStatus("Error: " + err);
+                            },
+                            function(status) {
+                                console.log("recordAudio():Audio Status: "+status);
+                                setAudioStatus(Media.MEDIA_MSG[status]);
+                            }
+                        );
+                }
+                // navigator.notification.beep(1);
+                console.log("Start recording...");
+                mediaRec.startRecord();
+                document.getElementById('play_caption').innerHTML = "Recording in:";
+                document.getElementById('file_name').innerHTML = recordSrc;
+                // Stop recording after 10 sec
+                recTime = 0;
+                var recInterval = setInterval(function() {
+                    recTime = recTime + 1;
+                    setAudioPosition(recTime+" sec");
+                    if (recTime >= 10) {
+                        clearInterval(recInterval);
+                        if (mediaRec.stopAudioRecord){
+                            console.log("stopAudioRecord");
+                            mediaRec.stopAudioRecord();
+                        } else {
+                            console.log("stopRecord");
+                            mediaRec.stopRecord();
+                        }
+                        console.log("recordAudio(): stop");
+                        // navigator.notification.beep(1);
+                    }
+                }, 1000);
+            }
+
+            /**
+             * Play back recorded audio
+             */
+            function playRecording() {
+                playAudio(recordSrc);
+            }
+            function seekTo() {
+                console.log("seekTo()");
+                if (media1) {
+                    media1.seekTo(15000);
+                }
+            }
+        </script>
+    </head>
+      <body onLoad="init();" id="stage" class="theme">
+        <div class="app">
+        <h3>Voice Notes</h3>
+            <div id="info">
+                Status: <span id="capture_status"></span><br/>
+                <img style="width:120px;height:120px;visibility:hidden;display:none;" id="camera_image" src="" />
+                <audio style="visibility:hidden;display:none;" id="audio_player" src="" "playAudio('/storage/sdcard0/My Documents/My Recordings/Voice0001.aac');" controls />
+                <video style="visibility:hidden;display:none;"  width="150" height="150" id="video_player" src=""
+                    onclick="playMedia();" >
+                    Browser does not support the video tag.
+                </video>
+            </div>
+                <div>
+                    <table width="100%">
+                        <tr><td width="20%">Name:</td><td id="name"> </td></tr>
+                        <tr><td width="20%">FullPath:</td><td id="fullPath"> </td></tr>
+                        <tr><td width="20%">Type:</td><td id="type"> </td></tr>
+                        <tr><td width="20%">Size:</td><td id="size"> </td></tr>
+                        <tr><td width="20%">Modified:</td><td id="lastModifiedDate"> </td></tr>
+                    </table>
+                    <table width="100%">
+                        <tr><td  width="20%" id="play_caption">Now playing:</td><td id="file_name"> </td></tr>
+                        <tr><td  width="20%">Status:</td><td id="audio_status"> </td></tr>
+                        <tr><td  width="20%">Duration:</td><td id="audio_duration"></td></tr>
+                        <tr><td  width="20%">Position:</td><td id="audio_position"></td></tr>
+                    </table>
+                </div>
+            <!-- <h2>Actions</h2> -->
+            <!-- <a class="btn large" onclick="captureImage();">Capture Image</a> -->
+            <!-- <a class="btn large" onclick="captureVideo();">Capture Video</a> -->
+            <!-- <h2><a href="audio.html" class="backBtn">Go To Notes</a></h2> -->
+            <div id="deviceready" class="blink">
+                <p class="event listening">Connecting to Device</p>
+                <p class="event received"><a onclick="playAudio('/storage/sdcard0/My Documents/My Recordings/Voice0001.aac');">Play Audio</a></p>
+                <p class="event1 received1"><a onclick="captureAudio();">Capture Audio</a></p>
+                <p class="event3 received3"><a onClick="recordAudio();">Record Audio for 10 sec</a></p>
+                <p class="event4 received4"><a class="btn large" onClick="playRecording();">Play/Unpause Recording</a></p>
+            </div>
+        </div>
+        <script type="text/javascript" src="cordova.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
+    </body>
+</html>
